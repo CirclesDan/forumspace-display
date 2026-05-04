@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ForumSpace</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #2F5D50;
+  color: #F9F7F4;
+  font-family: 'IBM Plex Sans', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#root { width: 100vw; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+/* ── Shared utils ─────────────────────────── */
+.center {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; gap: 20px;
+}
+
+/* ── Idle ─────────────────────────────────── */
+.idle-title {
+  font-family: 'Libre Baskerville', serif;
+  font-size: clamp(48px, 7vw, 88px);
+  color: #F9F7F4;
+}
+.idle-sub {
+  font-size: clamp(20px, 3vw, 36px);
+  color: rgba(249,247,244,0.65);
+}
+
+/* ── Waiting / error ──────────────────────── */
+.status-msg {
+  font-size: 20px;
+  color: rgba(255,255,255,0.35);
+}
+
+/* ── Norms ────────────────────────────────── */
+.norms {
+  display: flex; flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  padding: 48px 80px;
+}
+.norm-row {
+  display: flex; flex-direction: row;
+  align-items: center; gap: 72px;
+}
+.norm-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.15);
+  margin: 36px 0;
+}
+.norm-heading {
+  font-family: 'Libre Baskerville', serif;
+  font-size: clamp(36px, 4.5vw, 60px);
+  color: #F9F7F4;
+  flex: 1.4;
+}
+.norm-body {
+  font-size: clamp(18px, 2.2vw, 28px);
+  color: rgba(249,247,244,0.82);
+  flex: 1; line-height: 1.45;
+}
+
+/* ── Topic / generic ──────────────────────── */
+.topic {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; padding: 48px 80px; gap: 28px;
+}
+.topic-title {
+  font-family: 'Libre Baskerville', serif;
+  font-size: clamp(40px, 7vw, 90px);
+  color: #F9F7F4; text-align: center;
+  line-height: 1.1;
+}
+.topic-sub {
+  font-size: clamp(22px, 2.8vw, 38px);
+  color: rgba(249,247,244,0.8); text-align: center;
+}
+
+/* ── Round ────────────────────────────────── */
+.round-wrapper {
+  display: flex; flex-direction: column;
+  height: 100%;
+}
+.round-main {
+  display: flex; flex-direction: row;
+  flex: 3; padding-top: 24px;
+}
+.prompt-side {
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  padding: 16px 56px;
+}
+.thinking-tag {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 600; font-size: 15px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 28px;
+}
+.prompt-text {
+  font-family: 'Libre Baskerville', serif;
+  color: white; line-height: 1.22;
+  text-align: center;
+}
+.divider-v {
+  width: 1px;
+  background: rgba(255,255,255,0.3);
+  margin: 24px 0;
+}
+.timer-side {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.timer-num {
+  font-size: clamp(90px, 11vw, 150px);
+  font-weight: 800;
+  letter-spacing: -4px;
+  color: white;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.timer-sub-row {
+  display: flex; flex-direction: row;
+  align-items: center; justify-content: center;
+  gap: 48px; padding-top: 12px;
+}
+.per-person-label {
+  font-size: clamp(30px, 3.8vw, 50px);
+  font-weight: 700; color: white;
+  font-variant-numeric: tabular-nums;
+}
+.done-text {
+  font-family: 'Libre Baskerville', serif;
+  font-size: clamp(48px, 6vw, 72px);
+  color: white; text-align: center; line-height: 1.2;
+}
+
+/* ── Avatar queue ─────────────────────────── */
+.bottom-section {
+  flex: 1; display: flex;
+  flex-direction: row; align-items: center;
+  overflow: hidden; min-height: 0;
+}
+.bottom-left {
+  flex: 1; display: flex; flex-direction: row;
+  align-items: center;
+  padding: 0 48px; gap: 28px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.bottom-left::-webkit-scrollbar { display: none; }
+.bottom-right {
+  flex: 1; display: flex;
+  align-items: center; justify-content: center;
+}
+.avatar-wrap {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px; flex-shrink: 0;
+}
+.avatar {
+  background: rgba(0,0,0,0.55);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 700;
+  font-family: 'IBM Plex Sans', sans-serif;
+  transition: width .2s, height .2s, font-size .2s;
+}
+.avatar.current { width: 160px; height: 160px; font-size: 62px; }
+.avatar.next    { width: 110px; height: 110px; font-size: 44px; }
+.avatar.future  { width: 72px;  height: 72px;  font-size: 28px; }
+.avatar-name {
+  font-size: 15px; color: rgba(255,255,255,0.65);
+  font-weight: 500; font-family: 'IBM Plex Sans', sans-serif;
+  white-space: nowrap; min-height: 20px;
+}
+.avatar-name.current { font-size: 20px; color: white; font-weight: 600; }
+
+.current-speaker-name {
+  font-size: clamp(16px, 2vw, 24px);
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+}
+
+/* ── Exploration phase heading ───────────── */
+.exp-heading {
+  font-family: 'Libre Baskerville', serif;
+  font-size: clamp(40px, 5.5vw, 80px);
+  font-weight: 700;
+  color: white;
+  line-height: 1.1;
+  margin-bottom: 14px;
+}
+.exp-sub {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: clamp(14px, 1.8vw, 22px);
+  font-style: italic;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.45;
+}
+
+/* ── Music ────────────────────────────────── */
+.music-icon {
+  font-size: 64px; opacity: 0.6;
+}
+.music-title {
+  font-family: 'Libre Baskerville', serif;
+  font-size: clamp(32px, 5vw, 60px);
+  color: #F9F7F4; text-align: center;
+}
+.music-sub {
+  font-size: clamp(16px, 2vw, 24px);
+  color: rgba(249,247,244,0.5);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+#activate-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #2F5D50;
+  cursor: pointer;
+  gap: 24px;
+}
+#activate-overlay .act-title {
+  font-family: 'Libre Baskerville', serif;
+  font-size: clamp(36px, 5vw, 64px);
+  color: #F9F7F4;
+}
+#activate-overlay .act-sub {
+  font-size: clamp(16px, 2vw, 24px);
+  color: rgba(249,247,244,0.6);
+}
+
+/* ── Progress bar (persistent bottom strip) ────── */
+#progress-bar {
+  display: none;
+  padding: 10px 32px 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.18);
+  flex-shrink: 0;
+}
+#progress-bar.visible { display: block; }
+.pb-bar {
+  height: 24px;
+  display: flex;
+  flex-direction: row;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.pb-slice { height: 100%; position: relative; }
+.pb-fill  { position: absolute; left: 0; top: 0; bottom: 0; }
+.pb-labels { position: relative; height: 36px; }
+.pb-label {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+.pb-label-name {
+  font-size: 13px; font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  white-space: nowrap;
+}
+.pb-label-name.active { color: white; }
+.pb-label-time {
+  font-size: 12px; font-weight: 400;
+  color: rgba(255,255,255,0.45);
+  white-space: nowrap;
+}
+</style>
+</head>
+<body>
+<div id="activate-overlay" onclick="activateDisplay()">
+  <div class="act-title">ForumSpace Display</div>
+  <div class="act-sub">Click anywhere to activate</div>
+</div>
+<div id="root"><div class="center"><span class="status-msg">Connecting…</span></div></div>
+<div id="progress-bar"></div>
+
+<script>
+let displayActivated = false;
+let pendingAudio = null;
+let currentVideoEl = null;
+let currentVideoType = null; // 'vimeo' | 'direct'
+let bgAudio = null;
+
+function activateDisplay() {
+  displayActivated = true;
+  document.getElementById('activate-overlay').style.display = 'none';
+  if (pendingAudio) { pendingAudio.play().catch(() => {}); pendingAudio = null; }
+  if (bgAudio) bgAudio.play().catch(() => {});
+}
+
+function playBgAudio(url) {
+  if (bgAudio) { try { bgAudio.pause(); } catch {} bgAudio = null; }
+  bgAudio = new Audio(url);
+  const tryPlay = () => bgAudio && bgAudio.play().catch(() => {});
+  bgAudio.addEventListener('canplay', tryPlay, { once: true });
+  tryPlay();
+}
+
+function stopBgAudio() {
+  if (bgAudio) { try { bgAudio.pause(); } catch {} bgAudio = null; }
+}
+
+const SUPABASE_URL     = 'https://teghzlixauggijusaoxi.supabase.co';
+const SUPABASE_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZ2h6bGl4YXVnZ2lqdXNhb3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzM1NjQsImV4cCI6MjA4ODE0OTU2NH0.PNCzb13C2rNbWjYKxTkFjpDQaeXRd0C7ShCqgNf6nDs';
+
+const params  = new URLSearchParams(location.search);
+const forumId = params.get('forum');
+const root    = document.getElementById('root');
+
+// Escape HTML
+function e(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Format minutes as "Xm" or "Xh Ym"
+function fmtMin(m) {
+  const h = Math.floor(m / 60);
+  const min = Math.round(m % 60);
+  if (h > 0) return `${h}h ${min}m`;
+  return `${min}m`;
+}
+
+// ── Progress bar ─────────────────────────────────────────
+const PROG_BG   = ['#C8DBD7', '#9ABCB3', '#6D9E92'];
+const PROG_FILL = '#D4B483';
+const PROG_OVER = '#C4905A';
+const progBar   = document.getElementById('progress-bar');
+
+function renderProgressBar(data) {
+  if (data?.forumName && data.forumName !== forumName) {
+    forumName = data.forumName;
+    if (currentView === 'idle') renderIdle();
+  }
+  if (!data || !data.started || !data.elapsed || data.elapsed <= 0 || !data.items || !data.sections || !data.totalMinutes) {
+    progBar.classList.remove('visible');
+    return;
+  }
+  progBar.classList.add('visible');
+
+  const { elapsed, sections, items, totalMinutes } = data;
+  const elapsedMin = elapsed / 60;
+
+  const slicesHtml = items.map(item => {
+    const bg = PROG_BG[item.sectionIndex] ?? '#6D9E92';
+    const fillMins = Math.max(0, Math.min(elapsedMin - item.offset, item.minutes));
+    const fillPct  = item.minutes > 0 ? (fillMins / item.minutes) * 100 : 0;
+    const isOver   = elapsedMin > item.offset + item.minutes;
+    const borderStyle = !item.isFirstInSection
+      ? 'border-left:1px solid rgba(255,255,255,0.35);'
+      : item.sectionIndex > 0
+      ? 'border-left:2px solid rgba(255,255,255,0.65);'
+      : '';
+    return `<div class="pb-slice" style="flex:${item.minutes};background:${bg};${borderStyle}">
+      ${fillPct > 0 ? `<div class="pb-fill" style="width:${Math.min(fillPct,100).toFixed(1)}%;background:${isOver ? PROG_OVER : PROG_FILL}"></div>` : ''}
+    </div>`;
+  }).join('');
+
+  const labelsHtml = sections.map((section, idx) => {
+    const midPct = totalMinutes > 0 ? ((section.offset + section.minutes / 2) / totalMinutes * 100) : 0;
+    const isActive = elapsedMin >= section.offset && elapsedMin < section.offset + section.minutes;
+    return `<div class="pb-label" style="left:${midPct.toFixed(1)}%">
+      <span class="pb-label-name${isActive ? ' active' : ''}">${idx + 1}. ${e(section.label)}</span>
+      <span class="pb-label-time">${fmtMin(section.minutes)}</span>
+    </div>`;
+  }).join('');
+
+  progBar.innerHTML = `<div class="pb-bar">${slicesHtml}</div><div class="pb-labels">${labelsHtml}</div>`;
+}
+
+// Prompt font-size scaled for large display
+function promptFontSize(text) {
+  const w = window.innerWidth * 0.45;
+  if (!w || !text) return 90;
+  const longest = Math.max(...text.trim().split(/\s+/).map(w=>w.length));
+  const byWord = Math.floor((w - 112) / (longest * 0.65));
+  const len = text.length;
+  const byLen = len<=8?160:len<=16?120:len<=28?90:len<=45?70:len<=65?52:40;
+  return Math.min(byWord, byLen, 160);
+}
+
+// ── Renderers ────────────────────────────────────────────
+
+let forumName = params.get('name') ? decodeURIComponent(params.get('name')) : 'ForumSpace';
+let currentView = 'idle';
+
+function renderIdle() {
+  currentView = 'idle';
+  stopBgAudio();
+  root.innerHTML = `
+    <div class="center">
+      <div class="idle-title">${e(forumName)}</div>
+      <div class="idle-sub">Forum Meeting in Progress</div>
+    </div>`;
+}
+
+function renderNorms(items) {
+  const rows = (items||[]).map((item, i) => `
+    ${i>0?'<div class="norm-divider"></div>':''}
+    <div class="norm-row">
+      <div class="norm-heading">${e(item.heading)}</div>
+      <div class="norm-body">${e(item.body)}</div>
+    </div>`).join('');
+  root.innerHTML = `<div class="norms">${rows}</div>`;
+}
+
+function renderTopic(title, subtitle) {
+  root.innerHTML = `
+    <div class="topic">
+      <div class="topic-title">${e(title)}</div>
+      ${subtitle ? `<div class="topic-sub">${e(subtitle)}</div>` : ''}
+    </div>`;
+}
+
+function renderMusic(trackName, audioUrl) {
+  root.innerHTML = `
+    <div class="center">
+      <div class="music-icon">♪</div>
+      <div class="music-title">${e(trackName)}</div>
+      <div class="music-sub" id="music-status">Loading…</div>
+      ${audioUrl ? `<audio id="music-audio" src="${e(audioUrl)}"></audio>` : ''}
+    </div>`;
+  if (audioUrl) {
+    pendingAudio = document.getElementById('music-audio');
+    pendingAudio.addEventListener('play',  () => { const s = document.getElementById('music-status'); if (s) s.textContent = 'Now Playing'; });
+    pendingAudio.addEventListener('pause', () => { const s = document.getElementById('music-status'); if (s) s.textContent = 'Paused'; });
+    // Try to play immediately; also hook canplay in case browser needs the buffer to be ready first
+    const tryPlay = () => pendingAudio && pendingAudio.play().catch(() => {});
+    pendingAudio.addEventListener('canplay', tryPlay, { once: true });
+    tryPlay();
+  } else {
+    pendingAudio = null;
+  }
+}
+
+function renderVideo(url) {
+  const vimeo = url && url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vimeo) {
+    root.innerHTML = `<iframe id="vimeo-frame" src="https://player.vimeo.com/video/${vimeo[1]}?autoplay=1" style="width:100%;height:100%;border:none;" allow="autoplay;fullscreen"></iframe>`;
+    currentVideoEl = document.getElementById('vimeo-frame');
+    currentVideoType = 'vimeo';
+    return;
+  }
+  root.innerHTML = `<video id="direct-video" src="${e(url)}" autoplay controls style="width:100%;height:100%;"></video>`;
+  currentVideoEl = document.getElementById('direct-video');
+  currentVideoType = 'direct';
+  const tryPlayVideo = () => currentVideoEl && currentVideoEl.play().catch(() => {});
+  currentVideoEl.addEventListener('canplay', tryPlayVideo, { once: true });
+  tryPlayVideo();
+}
+
+function renderRound(p) {
+  const { phase, prompt, timerDisplay, queue, spoken, perPersonDisplay, label } = p;
+
+  if (phase === 'done') {
+    root.innerHTML = `<div class="center"><div class="done-text">Round<br>Complete</div></div>`;
+    return;
+  }
+
+  const fs = promptFontSize(prompt || '');
+
+  // Exploration phase info
+  const EXP_PHASES = {
+    'Present':   { heading: 'Presenting',  sub: 'End with a question.' },
+    'Questions': { heading: 'Questions',   sub: 'Clarify and be curious about the challenge underneath the challenge.' },
+    'Storytime': { heading: 'Storytime',   sub: 'Share experiences that actually happened to you.' },
+  };
+  const expInfo = p.phaseLabel ? EXP_PHASES[p.phaseLabel] : null;
+
+  // Separate current speaker from upcoming queue
+  const current = (phase === 'round' && queue && queue.length > 0) ? queue[queue.length - 1] : null;
+  const upcoming = current ? queue.slice(0, -1) : (queue || []);
+
+  const timerHtml = (phase === 'thinking' || phase === 'presenter' || phase === 'questions')
+    ? `<div class="timer-num">${e(timerDisplay)}</div>${p.allottedDisplay ? `<div class="timer-sub-row"><div class="per-person-label">${e(p.allottedDisplay)}</div></div>` : ''}`
+    : `<div class="timer-num">${e(timerDisplay)}</div>
+       <div class="timer-sub-row"><div class="per-person-label">${e(perPersonDisplay)}</div></div>`;
+
+  // Avatar queue — upcoming speakers on the left
+  let avatarHtml = '';
+  if (upcoming.length > 0 && phase === 'round') {
+    const n = upcoming.length;
+    avatarHtml = upcoming.map((m, i) => {
+      const role = i === n-1 ? 'next' : 'future';
+      return `
+        <div class="avatar-wrap">
+          <div class="avatar ${role}">${e(m.letter)}</div>
+          <div class="avatar-name">${e(m.firstName)}</div>
+        </div>`;
+    }).join('');
+  }
+
+  // Current speaker on the right of bottom section
+  const currentHtml = (phase === 'round' && current) ? `
+    <div class="bottom-right">
+      <div class="avatar current">${e(current.letter)}</div>
+    </div>` : '';
+
+  root.innerHTML = `
+    <div class="round-wrapper">
+      <div class="round-main">
+        <div class="prompt-side">
+          ${phase === 'thinking' ? '<div class="thinking-tag">THINKING TIME</div>' : ''}
+          ${expInfo ? `
+            <div class="exp-heading">${e(expInfo.heading)}</div>
+            <div class="exp-sub">${e(expInfo.sub)}</div>
+          ` : `
+            <div class="prompt-text" style="font-size:${fs}px;line-height:${fs*1.22}px">${e(prompt)}</div>
+          `}
+        </div>
+        <div class="divider-v"></div>
+        <div class="timer-side">${timerHtml}</div>
+      </div>
+      ${phase === 'round' ? `
+        <div class="bottom-section">
+          <div class="bottom-left">${avatarHtml}</div>
+          ${currentHtml}
+        </div>` : ''}
+    </div>`;
+}
+
+function render(payload) {
+  if (payload.type === 'bg-audio') {
+    if (payload.audioUrl) playBgAudio(payload.audioUrl);
+    return;
+  }
+  if (payload.type === 'bg-audio-stop') {
+    stopBgAudio();
+    return;
+  }
+  if (payload.type === 'audio-cmd') {
+    if (pendingAudio) {
+      if (payload.action === 'play') pendingAudio.play().catch(() => {});
+      else if (payload.action === 'pause') pendingAudio.pause();
+    } else if (bgAudio) {
+      if (payload.action === 'play') bgAudio.play().catch(() => {});
+      else if (payload.action === 'pause') bgAudio.pause();
+    }
+    return;
+  }
+  if (payload.type === 'video-cmd') {
+    if (currentVideoEl) {
+      if (currentVideoType === 'vimeo') {
+        const method = payload.action === 'pause' ? 'pause' : 'play';
+        currentVideoEl.contentWindow.postMessage(JSON.stringify({ method }), 'https://player.vimeo.com');
+      } else if (currentVideoType === 'direct') {
+        if (payload.action === 'pause') currentVideoEl.pause();
+        else currentVideoEl.play().catch(() => {});
+      }
+    }
+    return;
+  }
+  currentView = payload.type || 'idle';
+  pendingAudio = null;
+  currentVideoEl = null;
+  currentVideoType = null;
+  switch (payload.type) {
+    case 'norms': return renderNorms(payload.items);
+    case 'topic': return renderTopic(payload.title, payload.subtitle);
+    case 'music': return renderMusic(payload.trackName, payload.audioUrl);
+    case 'video': return renderVideo(payload.url);
+    case 'round': return renderRound(payload);
+    default:      return renderIdle();
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────
+
+if (!forumId) {
+  root.innerHTML = `<div class="center"><span class="status-msg">Add ?forum=YOUR_FORUM_ID to the URL</span></div>`;
+} else {
+  const { createClient } = supabase;
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  client.channel(`display:${forumId}`)
+    .on('broadcast', { event: 'content' }, ({ payload }) => render(payload))
+    .on('broadcast', { event: 'progress' }, ({ payload }) => renderProgressBar(payload))
+    .subscribe(status => {
+      if (status === 'SUBSCRIBED') renderIdle();
+    });
+}
+</script>
+</body>
+</html>
