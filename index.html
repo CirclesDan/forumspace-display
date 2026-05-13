@@ -290,7 +290,11 @@ body {
 <body>
 <div id="activate-overlay" onclick="activateDisplay()">
   <div class="act-title">ForumSpace Display</div>
-  <div class="act-sub">Click anywhere to activate</div>
+  <div class="act-sub" style="max-width:560px;text-align:center;line-height:1.6;">
+    1. Make sure your laptop won't sleep<br>
+    2. When you activate, listen to see if the volume is loud enough — adjust if needed
+  </div>
+  <div class="act-sub" style="margin-top:12px;opacity:0.5;">Click anywhere to activate</div>
 </div>
 <div id="root"><div class="center"><span class="status-msg">Connecting…</span></div></div>
 <div id="progress-bar"></div>
@@ -302,11 +306,30 @@ let currentVideoEl = null;
 let currentVideoType = null; // 'vimeo' | 'direct'
 let bgAudio = null;
 
+function playBeepTone() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  function beep() {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.8, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  }
+  beep();
+  setTimeout(beep, 200);
+  setTimeout(beep, 400);
+}
+
 function activateDisplay() {
   displayActivated = true;
   document.getElementById('activate-overlay').style.display = 'none';
   if (pendingAudio) { pendingAudio.play().catch(() => {}); pendingAudio = null; }
   if (bgAudio) bgAudio.play().catch(() => {});
+  setTimeout(playBeepTone, 3000);
 }
 
 function playBgAudio(url) {
