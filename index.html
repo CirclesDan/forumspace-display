@@ -325,6 +325,7 @@ let pendingAudio = null;
 let currentVideoEl = null;
 let currentVideoType = null; // 'vimeo' | 'direct'
 let bgAudio = null;
+let activationInterval = null;
 
 function playBeepTone() {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -351,6 +352,12 @@ function activateDisplay() {
   setTimeout(playBeepTone, 3000);
   if (window.displayChannel) {
     window.displayChannel.send({ type: 'broadcast', event: 'activation', payload: { active: true } });
+    // Heartbeat so any screen that subscribes after activation still learns the display is active
+    activationInterval = setInterval(() => {
+      if (window.displayChannel && displayActivated) {
+        window.displayChannel.send({ type: 'broadcast', event: 'activation', payload: { active: true } });
+      }
+    }, 5000);
   }
 }
 
@@ -501,6 +508,13 @@ function renderMusic(trackName, audioUrl) {
 }
 
 function renderVideo(url) {
+  const youtube = url && url.match(/(?:youtube\.com\/watch\?(?:.*&)?v=|youtu\.be\/)([^&?\s]+)/);
+  if (youtube) {
+    root.innerHTML = `<iframe id="youtube-frame" src="https://www.youtube.com/embed/${youtube[1]}?autoplay=1&enablejsapi=1" style="width:100%;height:100%;border:none;" allow="autoplay;fullscreen"></iframe>`;
+    currentVideoEl = document.getElementById('youtube-frame');
+    currentVideoType = 'youtube';
+    return;
+  }
   const vimeo = url && url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
   if (vimeo) {
     root.innerHTML = `<iframe id="vimeo-frame" src="https://player.vimeo.com/video/${vimeo[1]}?autoplay=1" style="width:100%;height:100%;border:none;" allow="autoplay;fullscreen"></iframe>`;
@@ -620,7 +634,10 @@ function render(payload) {
   }
   if (payload.type === 'video-cmd') {
     if (currentVideoEl) {
-      if (currentVideoType === 'vimeo') {
+      if (currentVideoType === 'youtube') {
+        const func = payload.action === 'pause' ? 'pauseVideo' : 'playVideo';
+        currentVideoEl.contentWindow.postMessage(JSON.stringify({ event: 'command', func }), 'https://www.youtube.com');
+      } else if (currentVideoType === 'vimeo') {
         const method = payload.action === 'pause' ? 'pause' : 'play';
         currentVideoEl.contentWindow.postMessage(JSON.stringify({ method }), 'https://player.vimeo.com');
       } else if (currentVideoType === 'direct') {
@@ -656,6 +673,11 @@ if (!forumId) {
   displayChannel
     .on('broadcast', { event: 'content' }, ({ payload }) => render(payload))
     .on('broadcast', { event: 'progress' }, ({ payload }) => renderProgressBar(payload))
+    .on('broadcast', { event: 'activation-request' }, () => {
+      if (displayActivated && window.displayChannel) {
+        window.displayChannel.send({ type: 'broadcast', event: 'activation', payload: { active: true } });
+      }
+    })
     .subscribe(status => {
       if (status === 'SUBSCRIBED') renderIdle();
     });
@@ -663,6 +685,7 @@ if (!forumId) {
   window.displayChannel = displayChannel;
 
   window.addEventListener('beforeunload', () => {
+    if (activationInterval) clearInterval(activationInterval);
     displayChannel.send({ type: 'broadcast', event: 'activation', payload: { active: false } });
   });
 }
