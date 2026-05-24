@@ -652,9 +652,9 @@ function renderTimer(p) {
           const d = typeof info === 'string' ? info : info.date;
           const [, mo, day] = d.split('-').map(Number);
           const time = typeof info === 'object' && info.startTime ? `<span style="opacity:0.7;margin-left:16px;">${e(info.startTime)}</span>` : '';
-          const initials = typeof info === 'object' && info.presenterInitials ? `<span style="opacity:0.55;margin-left:16px;">${e(info.presenterInitials)}</span>` : '';
           const loc = typeof info === 'object' && info.location ? `<span style="opacity:0.5;margin-left:16px;">${e(info.location)}</span>` : '';
-          return `<div style="font-size:clamp(26px,3.2vw,44px);font-weight:600;color:rgba(255,255,255,0.88);font-variant-numeric:tabular-nums;margin-bottom:14px;">${MONTHS[mo-1]} ${day}${time}${initials}${loc}</div>`;
+          const initials = typeof info === 'object' && info.presenterInitials ? `<span style="opacity:0.55;margin-left:16px;">(${e(info.presenterInitials)})</span>` : '';
+          return `<div style="font-size:clamp(26px,3.2vw,44px);font-weight:600;color:rgba(255,255,255,0.88);font-variant-numeric:tabular-nums;margin-bottom:14px;">${MONTHS[mo-1]} ${day}${time}${loc}${initials}</div>`;
         }).join('')}
       </div>`
     : p.trackName
