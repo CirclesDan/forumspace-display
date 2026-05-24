@@ -625,7 +625,7 @@ function renderTimer(p) {
   const { label, timerDisplay, totalDisplay, overtime } = p;
   const timerColor = overtime ? '#D7263D' : 'white';
   const fs = promptFontSize(label || '');
-  const photoBg = homePhotoUrl ? `
+  const photoBg = (homePhotoUrl && p.isBreak) ? `
     <img src="${e(homePhotoUrl)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;" />
     <div style="position:absolute;inset:0;background:rgba(0,0,0,0.48);z-index:1;"></div>` : '';
   root.innerHTML = `
