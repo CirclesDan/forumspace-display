@@ -638,6 +638,7 @@ function renderTimer(p) {
   const photoBg = (homePhotoUrl && p.isBreak) ? `
     <img src="${e(homePhotoUrl)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;" />
     <div style="position:absolute;inset:0;background:rgba(0,0,0,0.48);z-index:1;"></div>` : '';
+  const dividerHtml = p.isBreak ? '' : '<div style="width:1px;background:rgba(255,255,255,0.3);align-self:stretch;margin:24px 0;"></div>';
   root.innerHTML = `
     <div class="round-wrapper" style="position:relative;overflow:hidden;">
       ${photoBg}
@@ -645,6 +646,7 @@ function renderTimer(p) {
         <div class="prompt-side">
           <div class="prompt-text" style="font-size:${fs}px;line-height:${fs*1.22}px">${e(label)}</div>
         </div>
+        ${dividerHtml}
         <div class="timer-side">
           <div class="timer-num" style="color:${timerColor}">${e(timerDisplay)}</div>
           <div class="timer-sub-row">
@@ -719,6 +721,7 @@ function renderRound(p) {
             <div class="prompt-text" style="font-size:${fs}px;line-height:${fs*1.22}px">${e(prompt)}</div>
           `}
         </div>
+        <div style="width:1px;background:rgba(255,255,255,0.3);align-self:stretch;margin:24px 0;"></div>
         <div class="timer-side">${timerHtml}</div>
       </div>
       ${phase === 'round' ? `
@@ -786,14 +789,10 @@ if (!forumId) {
   const { createClient } = supabase;
   const client = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-  // Fetch forum home photo
-  client.from('forums').select('home_photo_url').eq('id', forumId).single().then(({ data }) => {
-    if (data?.home_photo_url) {
-      homePhotoUrl = data.home_photo_url;
-      if (currentView === 'idle') renderIdle();
-      else if (currentView === 'timer' && lastTimerPayload) renderTimer(lastTimerPayload);
-    }
-  });
+  // Fetch forum home photo — resolve before first renderIdle so backdrop shows immediately
+  const photoPromise = client.from('forums').select('home_photo_url').eq('id', forumId).single()
+    .then(({ data }) => { if (data?.home_photo_url) homePhotoUrl = data.home_photo_url; })
+    .catch(() => {});
 
   const displayChannel = client.channel(`display:${forumId}`, { config: { broadcast: { ack: false } } });
   displayChannel
@@ -804,8 +803,8 @@ if (!forumId) {
         window.displayChannel.send({ type: 'broadcast', event: 'activation', payload: { active: true } });
       }
     })
-    .subscribe(status => {
-      if (status === 'SUBSCRIBED') renderIdle();
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') { await photoPromise; renderIdle(); }
     });
 
   window.displayChannel = displayChannel;
