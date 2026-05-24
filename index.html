@@ -535,6 +535,7 @@ function promptFontSize(text) {
 let forumName = params.get('name') ? decodeURIComponent(params.get('name')) : 'ForumSpace';
 let currentView = 'idle';
 let homePhotoUrl = null;
+let lastTimerPayload = null;
 
 function renderIdle() {
   currentView = 'idle';
@@ -622,6 +623,7 @@ function nameFontSize(name, role) {
 }
 
 function renderTimer(p) {
+  lastTimerPayload = p;
   const { label, timerDisplay, totalDisplay, overtime } = p;
   const timerColor = overtime ? '#D7263D' : 'white';
   const fs = promptFontSize(label || '');
@@ -783,6 +785,7 @@ if (!forumId) {
     if (data?.home_photo_url) {
       homePhotoUrl = data.home_photo_url;
       if (currentView === 'idle') renderIdle();
+      else if (currentView === 'timer' && lastTimerPayload) renderTimer(lastTimerPayload);
     }
   });
 
