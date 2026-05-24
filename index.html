@@ -682,7 +682,7 @@ function renderRound(p) {
 
   const timerColor = p.overtime ? '#D7263D' : 'white';
   const timerHtml = (phase === 'thinking' || phase === 'presenter' || phase === 'questions')
-    ? `${phase === 'thinking' ? '<div style="font-family:\'Libre Baskerville\',serif;font-size:clamp(40px,5vw,64px);color:white;margin-bottom:12px;font-weight:700">Think!</div>' : ''}<div class="timer-num" style="color:${timerColor}">${e(timerDisplay)}</div>${p.allottedDisplay ? `<div class="timer-sub-row"><div class="per-person-label">${e(p.allottedDisplay)}</div></div>` : ''}`
+    ? `${phase === 'thinking' ? '<div style="font-family:\'Libre Baskerville\',serif;font-size:clamp(40px,5vw,64px);color:white;margin-bottom:12px;font-weight:700">Prep Time</div>' : ''}<div class="timer-num" style="color:${timerColor}">${e(timerDisplay)}</div>${p.allottedDisplay ? `<div class="timer-sub-row"><div class="per-person-label">${e(p.allottedDisplay)}</div></div>` : ''}`
     : `<div class="timer-num" style="color:${timerColor}">${e(timerDisplay)}</div>
        <div class="timer-sub-row"><div class="per-person-label">${e(perPersonDisplay)}</div></div>`;
 
@@ -710,7 +710,7 @@ function renderRound(p) {
     <div class="round-wrapper">
       <div class="round-main">
         <div class="prompt-side">
-          ${phase === 'thinking' ? '<div class="thinking-tag">THINKING TIME</div>' : ''}
+          ${phase === 'thinking' ? '<div class="thinking-tag">PREP TIME</div>' : ''}
           ${expInfo ? `
             <div class="exp-heading">${e(expInfo.heading)}</div>
             <div class="exp-sub">${e(expInfo.sub)}</div>
