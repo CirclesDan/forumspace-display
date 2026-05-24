@@ -650,10 +650,11 @@ function renderTimer(p) {
         <div style="font-family:'Libre Baskerville',serif;font-size:clamp(32px,4vw,54px);color:white;margin-bottom:16px;">Next Meetings</div>
         ${p.meetingDates.map(info => {
           const d = typeof info === 'string' ? info : info.date;
-          const [y, mo, day] = d.split('-').map(Number);
+          const [, mo, day] = d.split('-').map(Number);
+          const time = typeof info === 'object' && info.startTime ? `<span style="opacity:0.7;margin-left:16px;">${e(info.startTime)}</span>` : '';
           const initials = typeof info === 'object' && info.presenterInitials ? `<span style="opacity:0.55;margin-left:16px;">${e(info.presenterInitials)}</span>` : '';
           const loc = typeof info === 'object' && info.location ? `<span style="opacity:0.5;margin-left:16px;">${e(info.location)}</span>` : '';
-          return `<div style="font-size:clamp(26px,3.2vw,44px);font-weight:600;color:rgba(255,255,255,0.88);font-variant-numeric:tabular-nums;margin-bottom:14px;">${MONTHS[mo-1]} ${day}, ${y}${initials}${loc}</div>`;
+          return `<div style="font-size:clamp(26px,3.2vw,44px);font-weight:600;color:rgba(255,255,255,0.88);font-variant-numeric:tabular-nums;margin-bottom:14px;">${MONTHS[mo-1]} ${day}${time}${initials}${loc}</div>`;
         }).join('')}
       </div>`
     : p.trackName
