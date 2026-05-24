@@ -420,7 +420,7 @@ function activateDisplay() {
   if (pendingAudio) { pendingAudio.play().catch(() => {}); pendingAudio = null; }
   if (bgAudio) bgAudio.play().catch(() => {});
   if (currentVideoEl && currentVideoType === 'direct') currentVideoEl.play().catch(() => {});
-  setTimeout(playBeepTone, 3000);
+  playBeepTone();
   if (window.displayChannel) {
     window.displayChannel.send({ type: 'broadcast', event: 'activation', payload: { active: true } });
     // Heartbeat so any screen that subscribes after activation still learns the display is active
