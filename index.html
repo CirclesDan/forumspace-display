@@ -645,7 +645,6 @@ function renderTimer(p) {
         <div class="prompt-side">
           <div class="prompt-text" style="font-size:${fs}px;line-height:${fs*1.22}px">${e(label)}</div>
         </div>
-        <div class="divider-v"></div>
         <div class="timer-side">
           <div class="timer-num" style="color:${timerColor}">${e(timerDisplay)}</div>
           <div class="timer-sub-row">
@@ -720,7 +719,6 @@ function renderRound(p) {
             <div class="prompt-text" style="font-size:${fs}px;line-height:${fs*1.22}px">${e(prompt)}</div>
           `}
         </div>
-        <div class="divider-v"></div>
         <div class="timer-side">${timerHtml}</div>
       </div>
       ${phase === 'round' ? `
