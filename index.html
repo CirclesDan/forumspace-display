@@ -653,6 +653,11 @@ function renderTimer(p) {
           return `<div style="font-size:clamp(26px,3.2vw,44px);font-weight:600;color:rgba(255,255,255,0.88);font-variant-numeric:tabular-nums;">${MONTHS[mo-1]} ${day}, ${y}</div>`;
         }).join('')}
       </div>`
+    : p.trackName
+    ? `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;width:100%;">
+        <div class="music-icon">♪</div>
+        <div class="music-title">${e(p.trackName)}</div>
+      </div>`
     : `<div class="prompt-text" style="font-size:${fs}px;line-height:${fs*1.22}px">${e(label)}</div>`;
   root.innerHTML = `
     <div class="round-wrapper" style="position:relative;overflow:hidden;">
