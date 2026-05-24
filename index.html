@@ -646,11 +646,17 @@ function renderTimer(p) {
   const dividerHtml = p.isBreak ? '' : '<div style="width:1px;background:rgba(255,255,255,0.3);align-self:stretch;margin:24px 0;"></div>';
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const leftHtml = (p.meetingDates && p.meetingDates.length > 0)
-    ? `<div style="display:flex;flex-direction:column;gap:16px;">
-        <div style="font-family:'Libre Baskerville',serif;font-size:clamp(32px,4vw,54px);color:white;margin-bottom:8px;">Next Meetings</div>
-        ${p.meetingDates.map(d => {
+    ? `<div style="display:flex;flex-direction:column;">
+        <div style="font-family:'Libre Baskerville',serif;font-size:clamp(32px,4vw,54px);color:white;margin-bottom:16px;">Next Meetings</div>
+        ${p.meetingDates.map(info => {
+          const d = typeof info === 'string' ? info : info.date;
           const [y, mo, day] = d.split('-').map(Number);
-          return `<div style="font-size:clamp(26px,3.2vw,44px);font-weight:600;color:rgba(255,255,255,0.88);font-variant-numeric:tabular-nums;">${MONTHS[mo-1]} ${day}, ${y}</div>`;
+          const loc = typeof info === 'object' && info.location ? `<div style="font-size:clamp(18px,2.2vw,30px);color:rgba(255,255,255,0.5);margin-top:2px;">${e(info.location)}</div>` : '';
+          const initials = typeof info === 'object' && info.presenterInitials ? `<span style="opacity:0.55;margin-left:16px;">${e(info.presenterInitials)}</span>` : '';
+          return `<div style="margin-bottom:14px;">
+            <div style="font-size:clamp(26px,3.2vw,44px);font-weight:600;color:rgba(255,255,255,0.88);font-variant-numeric:tabular-nums;">${MONTHS[mo-1]} ${day}, ${y}${initials}</div>
+            ${loc}
+          </div>`;
         }).join('')}
       </div>`
     : p.trackName
