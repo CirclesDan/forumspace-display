@@ -382,20 +382,21 @@ function audioFadeOut(el, durationMs, onDone) {
 }
 let activationInterval = null;
 
+const beepCtx = new (window.AudioContext || window.webkitAudioContext)();
+
 function playBeepTone() {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  ctx.resume().then(() => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+  beepCtx.resume().then(() => {
+    const osc = beepCtx.createOscillator();
+    const gain = beepCtx.createGain();
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(beepCtx.destination);
     osc.frequency.value = 659;
     osc.type = 'sine';
-    gain.gain.setValueAtTime(0.9, ctx.currentTime);
-    gain.gain.setValueAtTime(0.9, ctx.currentTime + 0.88);
-    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.0);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 1.0);
+    gain.gain.setValueAtTime(0.9, beepCtx.currentTime);
+    gain.gain.setValueAtTime(0.9, beepCtx.currentTime + 0.88);
+    gain.gain.linearRampToValueAtTime(0, beepCtx.currentTime + 1.0);
+    osc.start(beepCtx.currentTime);
+    osc.stop(beepCtx.currentTime + 1.0);
   });
 }
 
@@ -414,13 +415,13 @@ document.addEventListener('fullscreenchange', () => {
 
 function activateDisplay() {
   displayActivated = true;
+  playBeepTone();
   document.getElementById('activate-overlay').style.display = 'none';
   document.getElementById('fullscreen-btn').style.display = 'block';
   document.documentElement.requestFullscreen().catch(() => {});
   if (pendingAudio) { pendingAudio.play().catch(() => {}); pendingAudio = null; }
   if (bgAudio) bgAudio.play().catch(() => {});
   if (currentVideoEl && currentVideoType === 'direct') currentVideoEl.play().catch(() => {});
-  playBeepTone();
   if (window.displayChannel) {
     window.displayChannel.send({ type: 'broadcast', event: 'activation', payload: { active: true } });
     // Heartbeat so any screen that subscribes after activation still learns the display is active
