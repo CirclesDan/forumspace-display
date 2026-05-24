@@ -557,6 +557,7 @@ function renderIdle() {
 }
 
 function renderNorms(items) {
+  currentView = 'norms';
   const rows = (items||[]).map((item, i) => `
     ${i>0?'<div class="norm-divider"></div>':''}
     <div class="norm-row">
@@ -567,6 +568,7 @@ function renderNorms(items) {
 }
 
 function renderTopic(title, subtitle) {
+  currentView = 'topic';
   root.innerHTML = `
     <div class="topic">
       <div class="topic-title">${e(title)}</div>
@@ -575,6 +577,7 @@ function renderTopic(title, subtitle) {
 }
 
 function renderMusic(trackName, audioUrl) {
+  currentView = 'music';
   root.innerHTML = `
     <div class="center">
       <div class="music-icon">♪</div>
@@ -631,6 +634,7 @@ function nameFontSize(name, role) {
 }
 
 function renderTimer(p) {
+  currentView = 'timer';
   lastTimerPayload = p;
   const { label, timerDisplay, totalDisplay, overtime } = p;
   const timerColor = overtime ? '#D7263D' : 'white';
@@ -658,6 +662,7 @@ function renderTimer(p) {
 }
 
 function renderRound(p) {
+  currentView = 'round';
   const { phase, prompt, timerDisplay, queue, spoken, perPersonDisplay, label, bgAudioUrl } = p;
 
   // Manage background audio from round state (handles reconnects)
@@ -804,7 +809,7 @@ if (!forumId) {
       }
     })
     .subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') { await photoPromise; renderIdle(); }
+      if (status === 'SUBSCRIBED') { await photoPromise; if (currentView === 'idle') renderIdle(); }
     });
 
   window.displayChannel = displayChannel;
