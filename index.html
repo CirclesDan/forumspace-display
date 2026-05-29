@@ -697,14 +697,16 @@ function renderTimer(p) {
   const hasMeetingDates = isMeetingsScreen && p.meetingDates.length > 0;
   const leftHtml = hasMeetingDates
     ? `<div style="display:flex;flex-direction:column;align-items:center;width:100%;">
-        <div style="font-family:'Libre Baskerville',serif;font-size:clamp(26px,3vw,44px);color:white;margin-bottom:24px;text-align:center;">Next Meetings</div>
+        <div style="font-family:'Libre Baskerville',serif;font-size:clamp(32px,4vw,56px);color:white;margin-bottom:40px;text-align:center;">Next Meetings</div>
         ${p.meetingDates.map(info => {
           const d = typeof info === 'string' ? info : info.date;
           const [, mo, day] = d.split('-').map(Number);
           const parts = typeof info === 'object' ? [info.startTime || null, info.location || null, info.presenterInitials ? `(${e(info.presenterInitials)})` : null].filter(Boolean) : [];
           const secondary = parts.join('  ·  ');
-          const fullLine = secondary ? `${MONTHS[mo-1]} ${day}  ·  ${secondary}` : `${MONTHS[mo-1]} ${day}`;
-          return `<div style="font-size:clamp(24px,2.8vw,42px);font-weight:600;color:white;white-space:nowrap;margin-bottom:20px;font-family:'IBM Plex Sans',sans-serif;text-align:center;">${fullLine}</div>`;
+          const dateStr = `${MONTHS[mo-1]} ${day}`;
+          return `<div style="font-size:clamp(26px,3vw,44px);color:white;white-space:nowrap;margin-bottom:26px;font-family:'IBM Plex Sans',sans-serif;text-align:center;">
+            <span style="font-weight:700;">${dateStr}</span>${secondary ? `<span style="font-weight:400;">  ·  ${secondary}</span>` : ''}
+          </div>`;
         }).join('')}
       </div>`
     : `<div class="prompt-text" style="font-size:${fs}px;line-height:${fs*1.22}px">${e(label)}</div>`;
