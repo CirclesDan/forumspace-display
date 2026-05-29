@@ -574,20 +574,20 @@ function renderPreso(p) {
     : `<div style="font-size:clamp(20px,2.2vw,32px);color:rgba(255,255,255,0.3);margin-top:40px;">No upcoming meetings scheduled</div>`;
   const hasTimer = p.timerDisplay != null;
   const timerColor = p.overtime ? '#D7263D' : 'white';
-  const leftPanel = `
-    <div style="display:flex;flex-direction:column;height:100%;justify-content:center;">
-      <div style="font-family:'Libre Baskerville',serif;font-size:clamp(34px,4vw,58px);color:white;margin-bottom:48px;">${e(p.label || 'Choose Explorations')}</div>
+  const content = `
+    <div style="display:flex;flex-direction:column;width:100%;max-width:780px;">
+      <div style="font-family:'Libre Baskerville',serif;font-size:clamp(34px,4vw,58px);color:white;margin-bottom:48px;text-align:center;">${e(p.label || 'Choose Explorations')}</div>
       ${meetingsHtml}
     </div>`;
   if (!hasTimer) {
-    root.innerHTML = `<div style="display:flex;flex:1;align-items:center;justify-content:center;padding:48px 80px;">${leftPanel}</div>`;
+    root.innerHTML = `<div style="display:flex;flex:1;align-items:center;justify-content:center;padding:48px 80px;">${content}</div>`;
     return;
   }
   root.innerHTML = `
     <div class="round-wrapper">
       <div class="round-main">
-        <div class="prompt-side" style="flex:1.6;align-items:flex-start;padding:40px 64px;">
-          ${leftPanel}
+        <div class="prompt-side" style="flex:1.6;padding:40px 48px;">
+          ${content}
         </div>
         <div style="width:1px;background:rgba(255,255,255,0.3);align-self:stretch;margin:24px 0;"></div>
         <div class="timer-side">
