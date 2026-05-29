@@ -693,11 +693,12 @@ function renderTimer(p) {
     <div style="position:absolute;inset:0;background:rgba(0,0,0,0.48);z-index:1;"></div>` : '';
   const dividerHtml = p.isBreak ? '' : '<div style="width:1px;background:rgba(255,255,255,0.3);align-self:stretch;margin:24px 0;"></div>';
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const hasMeetingDates = Array.isArray(p.meetingDates);
+  const isMeetingsScreen = Array.isArray(p.meetingDates);
+  const hasMeetingDates = isMeetingsScreen && p.meetingDates.length > 0;
   const leftHtml = hasMeetingDates
     ? `<div style="display:flex;flex-direction:column;">
         <div style="font-family:'Libre Baskerville',serif;font-size:clamp(26px,3vw,44px);color:white;margin-bottom:20px;">Next Meetings</div>
-        ${p.meetingDates.length > 0 ? p.meetingDates.map(info => {
+        ${p.meetingDates.map(info => {
           const d = typeof info === 'string' ? info : info.date;
           const [, mo, day] = d.split('-').map(Number);
           const parts = typeof info === 'object' ? [info.startTime || null, info.location || null, info.presenterInitials ? `(${e(info.presenterInitials)})` : null].filter(Boolean) : [];
@@ -706,7 +707,7 @@ function renderTimer(p) {
             <div style="font-size:clamp(28px,3.2vw,46px);font-weight:700;color:white;white-space:nowrap;font-variant-numeric:tabular-nums;">${MONTHS[mo-1]} ${day}</div>
             ${secondary ? `<div style="font-size:clamp(16px,1.8vw,24px);font-weight:400;color:rgba(255,255,255,0.58);white-space:nowrap;margin-top:5px;font-family:'IBM Plex Sans',sans-serif;">${secondary}</div>` : ''}
           </div>`;
-        }).join('') : ''}
+        }).join('')}
       </div>`
     : `<div class="prompt-text" style="font-size:${fs}px;line-height:${fs*1.22}px">${e(label)}</div>`;
   root.innerHTML = `
