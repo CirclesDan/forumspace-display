@@ -787,8 +787,8 @@ function renderRound(p) {
     </div>` : '';
 
   root.innerHTML = `
-    <div class="round-wrapper" style="position:relative;">
-      ${expInfo && p.label ? `<div style="position:absolute;top:18px;left:0;right:0;text-align:center;font-family:'Libre Baskerville',serif;font-size:clamp(18px,2vw,28px);color:rgba(255,255,255,0.55);letter-spacing:0.03em;z-index:5;">${e(p.label)}</div>` : ''}
+    <div class="round-wrapper">
+      ${p.phaseLabel != null && p.label ? `<div style="text-align:center;padding:14px 0 0;font-family:'Libre Baskerville',serif;font-size:clamp(28px,3.2vw,44px);color:white;letter-spacing:0.02em;">${e(p.label)}</div>` : ''}
       <div class="round-main">
         <div class="prompt-side">
           ${phase === 'thinking' ? '<div class="thinking-tag">PREP TIME</div>' : ''}
