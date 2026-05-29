@@ -383,6 +383,7 @@ function audioFadeOut(el, durationMs, onDone) {
   }, stepMs);
 }
 let activationInterval = null;
+let meetingPollInterval = null;
 
 const beepCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -685,6 +686,7 @@ function nameFontSize(name, role) {
 function renderTimer(p) {
   currentView = 'timer';
   lastTimerPayload = p;
+  if (meetingPollInterval) { clearInterval(meetingPollInterval); meetingPollInterval = null; }
   const { label, timerDisplay, totalDisplay, overtime } = p;
   const timerColor = overtime ? '#D7263D' : 'white';
   const fs = promptFontSize(label || '');
@@ -712,6 +714,12 @@ function renderTimer(p) {
   const leftHtml = isMeetingsScreen
     ? '<div style="display:flex;flex-direction:column;align-items:center;width:100%;"><div style="font-family:\'Libre Baskerville\',serif;font-size:clamp(40px,5vw,70px);color:white;margin-bottom:40px;text-align:center;">Next Meetings</div>' + meetingRowsHtml + '</div>'
     : '<div class="prompt-text" style="font-size:' + fs + 'px;line-height:' + (fs*1.22) + 'px">' + e(label) + '</div>';
+  // If we're on the meetings screen but dates haven't arrived yet, poll for updated content
+  if (isMeetingsScreen && !hasMeetingDates && window.displayChannel) {
+    meetingPollInterval = setInterval(function() {
+      if (window.displayChannel) window.displayChannel.send({ type: 'broadcast', event: 'content-request', payload: {} });
+    }, 2000);
+  }
   root.innerHTML = `
     <div class="round-wrapper" style="position:relative;overflow:hidden;">
       ${photoBg}
@@ -851,6 +859,7 @@ function render(payload) {
   pendingAudio = null;
   currentVideoEl = null;
   currentVideoType = null;
+  if (meetingPollInterval && payload.type !== 'timer') { clearInterval(meetingPollInterval); meetingPollInterval = null; }
   switch (payload.type) {
     case 'preso':  return renderPreso(payload);
     case 'norms':  return renderNorms(payload);
