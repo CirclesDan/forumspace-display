@@ -598,15 +598,20 @@ function renderPreso(p) {
     </div>`;
 }
 
-function renderNorms(items) {
+function renderNorms(p) {
   currentView = 'norms';
-  const rows = (items||[]).map((item, i) => `
+  const items = Array.isArray(p) ? p : (p.items || []);
+  const title = Array.isArray(p) ? null : (p.title || null);
+  const rows = items.map((item, i) => `
     ${i>0?'<div class="norm-divider"></div>':''}
     <div class="norm-row">
       <div class="norm-heading">${e(item.heading)}</div>
       <div class="norm-body">${e(item.body)}</div>
     </div>`).join('');
-  root.innerHTML = `<div class="norms">${rows}</div>`;
+  root.innerHTML = `<div class="norms">
+    ${title ? `<div style="font-family:'Libre Baskerville',serif;font-size:clamp(22px,2.6vw,36px);color:rgba(249,247,244,0.55);text-align:center;margin-bottom:32px;letter-spacing:0.04em;">${e(title)}</div>` : ''}
+    ${rows}
+  </div>`;
 }
 
 function renderTopic(title, subtitle) {
@@ -842,7 +847,7 @@ function render(payload) {
   currentVideoType = null;
   switch (payload.type) {
     case 'preso':  return renderPreso(payload);
-    case 'norms':  return renderNorms(payload.items);
+    case 'norms':  return renderNorms(payload);
     case 'topic':  return renderTopic(payload.title, payload.subtitle);
     case 'timer':  return renderTimer(payload);
     case 'music':  return renderMusic(payload.trackName, payload.audioUrl);
