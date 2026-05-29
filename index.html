@@ -755,15 +755,23 @@ function renderRound(p) {
     'Storytime': { heading: 'Storytime',   sub: 'Share experiences that actually happened to you.' },
     'Thinking':  { heading: 'Storytime',   sub: 'Share experiences that actually happened to you.' },
   };
-  const expInfo = p.phaseLabel ? EXP_PHASES[p.phaseLabel] : null;
+  const expInfo = (phase === 'thinking' && p.label)
+    ? EXP_PHASES['Thinking']
+    : (p.phaseLabel ? EXP_PHASES[p.phaseLabel] : null);
 
   // Separate current speaker from upcoming queue
   const current = (phase === 'round' && queue && queue.length > 0) ? queue[queue.length - 1] : null;
   const upcoming = current ? queue.slice(0, -1) : (queue || []);
 
   const timerColor = p.overtime ? '#D7263D' : 'white';
-  const timerHtml = (phase === 'thinking' || phase === 'presenter' || phase === 'questions')
-    ? `${phase === 'thinking' ? '<div style="font-family:\'Libre Baskerville\',serif;font-size:clamp(40px,5vw,64px);color:white;margin-bottom:12px;font-weight:700">Prep Time</div>' : ''}<div class="timer-num" style="color:${timerColor}">${e(timerDisplay)}</div>${p.allottedDisplay ? `<div class="timer-sub-row"><div class="per-person-label">${e(p.allottedDisplay)}</div></div>` : ''}`
+  const timerHtml = phase === 'thinking'
+    ? `<div style="display:flex;flex-direction:column;align-items:center;gap:24px;">
+         <div style="font-family:'Libre Baskerville',serif;font-size:clamp(28px,3.2vw,44px);color:rgba(255,255,255,0.75);font-weight:700;letter-spacing:0.03em;text-align:center;">Prep Time</div>
+         <div class="timer-num" style="color:${timerColor}">${e(timerDisplay)}</div>
+         ${p.allottedDisplay ? `<div class="per-person-label" style="color:white;">${e(p.allottedDisplay)}</div>` : ''}
+       </div>`
+    : (phase === 'presenter' || phase === 'questions')
+    ? `<div class="timer-num" style="color:${timerColor}">${e(timerDisplay)}</div>${p.allottedDisplay ? `<div class="timer-sub-row"><div class="per-person-label">${e(p.allottedDisplay)}</div></div>` : ''}`
     : `<div class="timer-num" style="color:${timerColor}">${e(timerDisplay)}</div>
        <div class="timer-sub-row"><div class="per-person-label">${e(perPersonDisplay)}</div></div>`;
 
