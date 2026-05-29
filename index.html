@@ -695,21 +695,23 @@ function renderTimer(p) {
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const isMeetingsScreen = Array.isArray(p.meetingDates);
   const hasMeetingDates = isMeetingsScreen && p.meetingDates.length > 0;
+  let meetingRowsHtml = '';
+  if (hasMeetingDates) {
+    meetingRowsHtml = p.meetingDates.map(function(info) {
+      const d = typeof info === 'string' ? info : info.date;
+      const parts_d = d.split('-');
+      const mo = Number(parts_d[1]);
+      const day = Number(parts_d[2]);
+      const parts = typeof info === 'object' ? [info.startTime || null, info.location || null, info.presenterInitials ? '(' + e(info.presenterInitials) + ')' : null].filter(Boolean) : [];
+      const secondary = parts.join('  \u00B7  ');
+      const dateStr = MONTHS[mo-1] + ' ' + day;
+      const secondaryHtml = secondary ? '<span style="font-weight:400">  \u00B7  ' + secondary + '</span>' : '';
+      return '<div style="font-size:clamp(26px,3vw,44px);color:white;white-space:nowrap;margin-bottom:26px;text-align:center;"><span style="font-weight:700">' + dateStr + '</span>' + secondaryHtml + '</div>';
+    }).join('');
+  }
   const leftHtml = hasMeetingDates
-    ? `<div style="display:flex;flex-direction:column;align-items:center;width:100%;">
-        <div style="font-family:'Libre Baskerville',serif;font-size:clamp(32px,4vw,56px);color:white;margin-bottom:40px;text-align:center;">Next Meetings</div>
-        ${p.meetingDates.map(info => {
-          const d = typeof info === 'string' ? info : info.date;
-          const [, mo, day] = d.split('-').map(Number);
-          const parts = typeof info === 'object' ? [info.startTime || null, info.location || null, info.presenterInitials ? `(${e(info.presenterInitials)})` : null].filter(Boolean) : [];
-          const secondary = parts.join('  ·  ');
-          const dateStr = `${MONTHS[mo-1]} ${day}`;
-          return `<div style="font-size:clamp(26px,3vw,44px);color:white;white-space:nowrap;margin-bottom:26px;font-family:'IBM Plex Sans',sans-serif;text-align:center;">
-            <span style="font-weight:700;">${dateStr}</span>${secondary ? `<span style="font-weight:400;">  ·  ${secondary}</span>` : ''}
-          </div>`;
-        }).join('')}
-      </div>`
-    : `<div class="prompt-text" style="font-size:${fs}px;line-height:${fs*1.22}px">${e(label)}</div>`;
+    ? '<div style="display:flex;flex-direction:column;align-items:center;width:100%;"><div style="font-family:\'Libre Baskerville\',serif;font-size:clamp(32px,4vw,56px);color:white;margin-bottom:40px;text-align:center;">Next Meetings</div>' + meetingRowsHtml + '</div>'
+    : '<div class="prompt-text" style="font-size:' + fs + 'px;line-height:' + (fs*1.22) + 'px">' + e(label) + '</div>';
   root.innerHTML = `
     <div class="round-wrapper" style="position:relative;overflow:hidden;">
       ${photoBg}
