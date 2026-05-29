@@ -751,9 +751,7 @@ function renderRound(p) {
     'Storytime': { heading: 'Storytime',   sub: 'Share experiences that actually happened to you.' },
     'Thinking':  { heading: 'Storytime',   sub: 'Share experiences that actually happened to you.' },
   };
-  const expInfo = (phase === 'thinking' && p.label)
-    ? EXP_PHASES['Thinking']
-    : (p.phaseLabel ? EXP_PHASES[p.phaseLabel] : null);
+  const expInfo = p.phaseLabel ? EXP_PHASES[p.phaseLabel] : null;
 
   // Separate current speaker from upcoming queue
   const current = (phase === 'round' && queue && queue.length > 0) ? queue[queue.length - 1] : null;
