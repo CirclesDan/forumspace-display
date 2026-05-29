@@ -753,6 +753,7 @@ function renderRound(p) {
     'Present':   { heading: 'Presenting',  sub: 'End with a question.' },
     'Questions': { heading: 'Questions',   sub: 'Clarify and be curious about the challenge underneath the challenge.' },
     'Storytime': { heading: 'Storytime',   sub: 'Share experiences that actually happened to you.' },
+    'Thinking':  { heading: 'Storytime',   sub: 'Share experiences that actually happened to you.' },
   };
   const expInfo = p.phaseLabel ? EXP_PHASES[p.phaseLabel] : null;
 
@@ -791,7 +792,6 @@ function renderRound(p) {
       ${p.phaseLabel != null && p.label ? `<div style="text-align:center;padding:14px 0 0;font-family:'Libre Baskerville',serif;font-size:clamp(28px,3.2vw,44px);color:white;letter-spacing:0.02em;">${e(p.label)}</div>` : ''}
       <div class="round-main">
         <div class="prompt-side">
-          ${phase === 'thinking' ? '<div class="thinking-tag">PREP TIME</div>' : ''}
           ${expInfo ? `
             <div class="exp-heading">${e(expInfo.heading)}</div>
             <div class="exp-sub">${e(expInfo.sub)}</div>
