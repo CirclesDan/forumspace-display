@@ -896,7 +896,7 @@ if (!forumId) {
   const client = createClient(SUPABASE_URL, SUPABASE_ANON);
 
   // Fetch forum home photo — resolve before first renderIdle so backdrop shows immediately
-  const photoPromise = client.from('forums').select('home_photo_url').eq('id', forumId).single()
+  const photoPromise = client.from('forum_display_photo').select('home_photo_url').eq('id', forumId).single()
     .then(({ data }) => { if (data?.home_photo_url) homePhotoUrl = data.home_photo_url; })
     .catch(() => {});
 
