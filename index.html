@@ -456,6 +456,9 @@ const SUPABASE_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
 
 const params  = new URLSearchParams(location.search);
 const forumId = params.get('forum');
+// Channel key: prefer the unguessable session token (?key=…); fall back to the
+// forum id for older URLs so this file is safe to deploy before the app ships.
+const displayKey = params.get('key') || forumId;
 const root    = document.getElementById('root');
 
 // Escape HTML
@@ -900,7 +903,7 @@ if (!forumId) {
     .then(({ data }) => { if (data?.home_photo_url) homePhotoUrl = data.home_photo_url; })
     .catch(() => {});
 
-  const displayChannel = client.channel(`display:${forumId}`, { config: { broadcast: { ack: false } } });
+  const displayChannel = client.channel(`display:${displayKey}`, { config: { broadcast: { ack: false } } });
   displayChannel
     .on('broadcast', { event: 'content' }, ({ payload }) => render(payload))
     .on('broadcast', { event: 'progress' }, ({ payload }) => renderProgressBar(payload))
