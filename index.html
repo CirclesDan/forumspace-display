@@ -613,13 +613,14 @@ function renderPreso(p) {
     <div style="display:flex;align-items:center;gap:64px;padding:24px 0;border-bottom:1px solid rgba(255,255,255,0.12);">
       <div style="font-family:'Libre Baskerville',serif;font-size:clamp(26px,3vw,44px);font-weight:700;color:white;min-width:150px;">${e(m.dateLabel)}</div>
       <div style="display:flex;gap:80px;">
-        ${[0,1].map(slot => {
-          const name = slot === 0 ? m.slot0Name : m.slot1Name;
-          return `<div>
+        ${(() => {
+          const names = [m.slot0Name, m.slot1Name, m.slot2Name];
+          const shown = Math.max(2, names.filter(Boolean).length); // always show 2 exploration slots, up to 3 if assigned
+          return names.slice(0, shown).map((name, slot) => `<div>
             <div style="font-size:clamp(11px,1.1vw,15px);color:rgba(255,255,255,0.42);margin-bottom:8px;text-transform:uppercase;letter-spacing:1.5px;">Exploration ${slot+1}</div>
             <div style="font-size:clamp(22px,2.8vw,42px);font-weight:600;color:${name ? 'white' : 'rgba(255,255,255,0.22)'};">${e(name || '—')}</div>
-          </div>`;
-        }).join('')}
+          </div>`).join('');
+        })()}
       </div>
     </div>`).join('');
   const meetingsHtml = (p.meetings && p.meetings.length > 0)
