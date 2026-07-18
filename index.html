@@ -393,6 +393,7 @@ let pendingAudio = null;
 let currentVideoEl = null;
 let currentVideoType = null; // 'vimeo' | 'direct'
 let currentVideoUrl = null;  // guards against re-rendering (restarting) the same video
+let currentMusicUrl = null;  // same guard for the music screen's <audio>
 let bgAudio = null;
 let bgAudioSrc = null;
 let bgFadeInterval = null;
@@ -615,7 +616,9 @@ function renderPreso(p) {
       <div style="display:flex;gap:80px;">
         ${(() => {
           const names = [m.slot0Name, m.slot1Name, m.slot2Name];
-          const shown = Math.max(2, names.filter(Boolean).length); // always show 2 exploration slots, up to 3 if assigned
+          let lastAssigned = -1;
+          names.forEach((n, i) => { if (n) lastAssigned = i; });
+          const shown = Math.max(2, lastAssigned + 1); // always show 2 exploration slots, extend to include any later assigned one
           return names.slice(0, shown).map((name, slot) => `<div>
             <div style="font-size:clamp(11px,1.1vw,15px);color:rgba(255,255,255,0.42);margin-bottom:8px;text-transform:uppercase;letter-spacing:1.5px;">Exploration ${slot+1}</div>
             <div style="font-size:clamp(22px,2.8vw,42px);font-weight:600;color:${name ? 'white' : 'rgba(255,255,255,0.22)'};">${e(name || '—')}</div>
@@ -678,6 +681,12 @@ function renderTopic(title, subtitle) {
 }
 
 function renderMusic(trackName, audioUrl) {
+  // Idempotent: a duplicate 'music' broadcast (reconnect re-send) must not
+  // recreate the <audio> and restart the track from 0.
+  if (audioUrl && audioUrl === currentMusicUrl && document.getElementById('music-audio')) {
+    return;
+  }
+  currentMusicUrl = audioUrl || null;
   currentView = 'music';
   root.innerHTML = `
     <div class="center">
@@ -952,6 +961,10 @@ function render(payload) {
   pendingAudio = null;
   currentVideoEl = null;
   currentVideoType = null;
+  currentVideoUrl = null;
+  // currentMusicUrl is intentionally NOT cleared here: renderMusic's guard relies
+  // on it surviving, and uses a DOM check to detect switch-away. Clearing it would
+  // make the guard never fire (the render() null-out runs before renderMusic).
   if (meetingPollInterval && payload.type !== 'timer') { clearInterval(meetingPollInterval); meetingPollInterval = null; }
   switch (payload.type) {
     case 'preso':  return renderPreso(payload);
