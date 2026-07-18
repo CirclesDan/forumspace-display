@@ -917,13 +917,24 @@ function render(payload) {
   if (payload.type === 'video-cmd') {
     if (currentVideoEl) {
       if (currentVideoType === 'youtube') {
-        const func = payload.action === 'pause' ? 'pauseVideo' : 'playVideo';
-        currentVideoEl.contentWindow.postMessage(JSON.stringify({ event: 'command', func }), 'https://www.youtube.com');
+        if (payload.action === 'reset') {
+          currentVideoEl.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [0, true] }), 'https://www.youtube.com');
+          currentVideoEl.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), 'https://www.youtube.com');
+        } else {
+          const func = payload.action === 'pause' ? 'pauseVideo' : 'playVideo';
+          currentVideoEl.contentWindow.postMessage(JSON.stringify({ event: 'command', func }), 'https://www.youtube.com');
+        }
       } else if (currentVideoType === 'vimeo') {
-        const method = payload.action === 'pause' ? 'pause' : 'play';
-        currentVideoEl.contentWindow.postMessage(JSON.stringify({ method }), 'https://player.vimeo.com');
+        if (payload.action === 'reset') {
+          currentVideoEl.contentWindow.postMessage(JSON.stringify({ method: 'setCurrentTime', value: 0 }), 'https://player.vimeo.com');
+          currentVideoEl.contentWindow.postMessage(JSON.stringify({ method: 'pause' }), 'https://player.vimeo.com');
+        } else {
+          const method = payload.action === 'pause' ? 'pause' : 'play';
+          currentVideoEl.contentWindow.postMessage(JSON.stringify({ method }), 'https://player.vimeo.com');
+        }
       } else if (currentVideoType === 'direct') {
-        if (payload.action === 'pause') currentVideoEl.pause();
+        if (payload.action === 'reset') { currentVideoEl.currentTime = 0; currentVideoEl.pause(); }
+        else if (payload.action === 'pause') currentVideoEl.pause();
         else currentVideoEl.play().catch(() => {});
       }
     }
