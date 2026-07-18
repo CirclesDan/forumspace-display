@@ -928,6 +928,14 @@ function render(payload) {
     }
     return;
   }
+  // Same video already mounted → leave it playing. A reconnect re-send of the
+  // 'video' payload must not tear down and restart the element (checked here,
+  // before currentVideoEl is nulled below, or the guard could never fire).
+  if (payload.type === 'video' && payload.url && payload.url === currentVideoUrl
+      && currentVideoEl && document.body.contains(currentVideoEl)) {
+    currentView = 'video';
+    return;
+  }
   currentView = payload.type || 'idle';
   pendingAudio = null;
   currentVideoEl = null;
