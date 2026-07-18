@@ -158,6 +158,13 @@ body {
   font-weight: 700; color: white;
   font-variant-numeric: tabular-nums;
 }
+.track-name {
+  margin-top: 22px;
+  font-size: clamp(20px, 2.2vw, 34px);
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  text-align: center;
+}
 .done-text {
   font-family: 'Libre Baskerville', serif;
   font-size: clamp(48px, 6vw, 72px);
@@ -326,6 +333,44 @@ body {
 #fullscreen-btn.is-fullscreen {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3'/%3E%3C/svg%3E");
 }
+
+/* ── Connection status pill ───────────────── */
+/* Live: a small dim green dot in the corner (unobtrusive in-room).
+   Reconnecting: an amber pill with a label so a blip reads as transient. */
+#conn-status {
+  position: fixed;
+  bottom: 14px; right: 14px;
+  z-index: 50;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px; font-weight: 600;
+  color: #F9F7F4;
+  opacity: 0;
+  transition: opacity 0.4s ease, background 0.4s ease;
+  pointer-events: none;
+}
+#conn-status .conn-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #6FCF8E;
+  flex: 0 0 auto;
+}
+#conn-status .conn-label { white-space: nowrap; }
+/* Live state: show just a faint dot, no label */
+#conn-status.is-live { opacity: 0.35; }
+#conn-status.is-live .conn-label { display: none; }
+/* Reconnecting state: amber, visible, pulsing dot + label */
+#conn-status.is-reconnecting {
+  opacity: 1;
+  background: rgba(0,0,0,0.55);
+}
+#conn-status.is-reconnecting .conn-dot {
+  background: #E6B450;
+  animation: conn-pulse 1s ease-in-out infinite;
+}
+@keyframes conn-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
 </style>
 </head>
 <body>
@@ -340,12 +385,14 @@ body {
 <button id="fullscreen-btn" onclick="toggleFullscreen()" title="Toggle fullscreen"></button>
 <div id="root"><div class="center"><span class="status-msg">Connecting…</span></div></div>
 <div id="progress-bar"></div>
+<div id="conn-status"><span class="conn-dot"></span><span class="conn-label"></span></div>
 
 <script>
 let displayActivated = false;
 let pendingAudio = null;
 let currentVideoEl = null;
 let currentVideoType = null; // 'vimeo' | 'direct'
+let currentVideoUrl = null;  // guards against re-rendering (restarting) the same video
 let bgAudio = null;
 let bgAudioSrc = null;
 let bgFadeInterval = null;
@@ -651,6 +698,13 @@ function renderMusic(trackName, audioUrl) {
 }
 
 function renderVideo(url) {
+  // Idempotent: if this exact video is already mounted and still in the DOM,
+  // do nothing. A duplicate 'video' broadcast (heartbeat or reconnect re-send)
+  // would otherwise recreate the element and restart playback from 0.
+  if (url && url === currentVideoUrl && currentVideoEl && document.body.contains(currentVideoEl)) {
+    return;
+  }
+  currentVideoUrl = url;
   const youtube = url && url.match(/(?:youtube\.com\/watch\?(?:.*&)?v=|youtu\.be\/)([^&?\s]+)/);
   if (youtube) {
     root.innerHTML = `<iframe id="youtube-frame" src="https://www.youtube.com/embed/${youtube[1]}?autoplay=1&enablejsapi=1" style="width:100%;height:100%;border:none;" allow="autoplay;fullscreen"></iframe>`;
@@ -751,6 +805,7 @@ function renderTimer(p) {
           <div class="timer-sub-row">
             <div class="per-person-label">${e(totalDisplay)}</div>
           </div>
+          ${p.trackName ? '<div class="track-name">♪ ' + e(p.trackName) + '</div>' : ''}
         </div>
       </div>
     </div>`;
@@ -892,6 +947,28 @@ function render(payload) {
 
 // ── Init ─────────────────────────────────────────────────
 
+// Reflect the realtime connection state in the corner pill so a transient
+// WebSocket blip reads as "reconnecting", not a broken display. supabase-js
+// auto-reconnects; SUBSCRIBED fires again on recovery and re-syncs content.
+const connEl = document.getElementById('conn-status');
+let connReconnectTimer = null;
+function setConnStatus(status) {
+  if (!connEl) return;
+  if (status === 'SUBSCRIBED') {
+    if (connReconnectTimer) { clearTimeout(connReconnectTimer); connReconnectTimer = null; }
+    connEl.className = 'is-live';
+    connEl.querySelector('.conn-label').textContent = 'Live';
+  } else {
+    // CHANNEL_ERROR / TIMED_OUT / CLOSED — debounce briefly so a sub-second
+    // blip during normal operation doesn't flash the pill.
+    if (connReconnectTimer) return;
+    connReconnectTimer = setTimeout(() => {
+      connEl.className = 'is-reconnecting';
+      connEl.querySelector('.conn-label').textContent = 'Reconnecting…';
+    }, 1200);
+  }
+}
+
 if (!forumId) {
   root.innerHTML = `<div class="center"><span class="status-msg">Add ?forum=YOUR_FORUM_ID to the URL</span></div>`;
 } else {
@@ -913,10 +990,12 @@ if (!forumId) {
       }
     })
     .subscribe(async (status) => {
+      setConnStatus(status);
       if (status === 'SUBSCRIBED') {
         await photoPromise;
         if (currentView === 'idle') renderIdle();
-        // Request current content from app in case we connected after it started broadcasting
+        // Request current content from app in case we connected after it started
+        // broadcasting, or to recover after a reconnect dropped intervening updates.
         displayChannel.send({ type: 'broadcast', event: 'content-request', payload: {} });
       }
     });
