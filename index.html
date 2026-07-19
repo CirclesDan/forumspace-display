@@ -444,10 +444,10 @@ function playBeepTone() {
     osc.frequency.value = 659;
     osc.type = 'sine';
     gain.gain.setValueAtTime(0.9, beepCtx.currentTime);
-    gain.gain.setValueAtTime(0.9, beepCtx.currentTime + 0.88);
-    gain.gain.linearRampToValueAtTime(0, beepCtx.currentTime + 1.0);
+    gain.gain.setValueAtTime(0.9, beepCtx.currentTime + 1.1);
+    gain.gain.linearRampToValueAtTime(0, beepCtx.currentTime + 1.25);
     osc.start(beepCtx.currentTime);
-    osc.stop(beepCtx.currentTime + 1.0);
+    osc.stop(beepCtx.currentTime + 1.25);
   });
 }
 
