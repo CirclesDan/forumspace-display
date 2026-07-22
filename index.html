@@ -322,7 +322,7 @@ body {
   border: 1px solid rgba(255,255,255,0.2);
   border-radius: 8px;
   cursor: pointer;
-  opacity: 0.4;
+  opacity: 0.55;
   transition: opacity 0.2s;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -380,7 +380,8 @@ body {
     1. Make sure your laptop won't sleep<br>
     2. When you activate, listen to see if the volume is loud enough — adjust if needed
   </div>
-  <div class="act-sub" style="margin-top:12px;opacity:0.5;">Click anywhere to activate &amp; go fullscreen</div>
+  <div class="act-sub" style="margin-top:12px;opacity:0.5;">Click anywhere to activate</div>
+  <div class="act-sub" style="margin-top:4px;opacity:0.35;font-size:0.8em;">Optional: use the ⛶ button (bottom-left) for fullscreen · Esc exits</div>
 </div>
 <button id="fullscreen-btn" onclick="toggleFullscreen()" title="Toggle fullscreen"></button>
 <div id="root"><div class="center"><span class="status-msg">Connecting…</span></div></div>
@@ -469,7 +470,9 @@ function activateDisplay() {
   playBeepTone();
   document.getElementById('activate-overlay').style.display = 'none';
   document.getElementById('fullscreen-btn').style.display = 'block';
-  document.documentElement.requestFullscreen().catch(() => {});
+  // NOTE: do NOT auto-enter fullscreen here. Forcing requestFullscreen on click
+  // left a tester with an unrecoverable oversized window (had to close the tab).
+  // Fullscreen is now opt-in via the ⛶ button (Esc always exits).
   if (pendingAudio) { pendingAudio.play().catch(() => {}); pendingAudio = null; }
   if (bgAudio) bgAudio.play().catch(() => {});
   if (currentVideoEl && currentVideoType === 'direct') currentVideoEl.play().catch(() => {});
