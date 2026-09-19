@@ -589,6 +589,7 @@ function promptFontSize(text) {
 
 let forumName = params.get('name') ? decodeURIComponent(params.get('name')) : 'ForumSpace';
 let currentView = 'idle';
+let prevRoundOvertime = false;
 let homePhotoUrl = null;
 let lastTimerPayload = null;
 
@@ -835,6 +836,12 @@ function renderTimer(p) {
 function renderRound(p) {
   currentView = 'round';
   const { phase, prompt, timerDisplay, queue, spoken, perPersonDisplay, label, bgAudioUrl } = p;
+
+  // Beep through the display (room) speakers when a timer hits its mark — the phone
+  // beeps in the moderator's hand, but the room hears the display. Edge-detect the
+  // overtime flag (arrives every second) so it fires once and re-arms per speaker.
+  if (p.overtime && !prevRoundOvertime) { try { playBeepTone(); } catch (e) {} }
+  prevRoundOvertime = !!p.overtime;
 
   // Manage background audio from round state (handles reconnects)
   if (bgAudioUrl) playBgAudio(bgAudioUrl);
