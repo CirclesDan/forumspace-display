@@ -438,18 +438,26 @@ let meetingPollInterval = null;
 const beepCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playBeepTone() {
+  // "Soft ding bright" chime — matches assets/beep.wav in the app.
+  // G5 (784 Hz) plus decaying harmonics, ~2.2 s ring-out.
   beepCtx.resume().then(() => {
-    const osc = beepCtx.createOscillator();
-    const gain = beepCtx.createGain();
-    osc.connect(gain);
-    gain.connect(beepCtx.destination);
-    osc.frequency.value = 659;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0.9, beepCtx.currentTime);
-    gain.gain.setValueAtTime(0.9, beepCtx.currentTime + 1.1);
-    gain.gain.linearRampToValueAtTime(0, beepCtx.currentTime + 1.25);
-    osc.start(beepCtx.currentTime);
-    osc.stop(beepCtx.currentTime + 1.25);
+    const t0 = beepCtx.currentTime;
+    const master = beepCtx.createGain();
+    master.gain.value = 0.5;
+    master.connect(beepCtx.destination);
+    [[1, 1.0, 1.6], [2, 0.45, 2.2], [3, 0.22, 3.0], [4, 0.10, 4.0]].forEach(([mult, amp, decay]) => {
+      const osc = beepCtx.createOscillator();
+      const g = beepCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 784 * mult;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(amp, t0 + 0.004);
+      g.gain.setTargetAtTime(0, t0 + 0.004, 1 / decay);
+      osc.connect(g);
+      g.connect(master);
+      osc.start(t0);
+      osc.stop(t0 + 2.3);
+    });
   });
 }
 
@@ -592,6 +600,53 @@ let currentView = 'idle';
 let prevRoundOvertime = false;
 let homePhotoUrl = null;
 let lastTimerPayload = null;
+
+// ── Self-ticking timer ───────────────────────────────────
+// The phone broadcasts the timer every second, but when it sleeps or backgrounds
+// iOS suspends its JS and the broadcasts stop — which used to freeze the room
+// display until the phone woke and re-broadcast. Instead we anchor to the last
+// elapsed value we received and advance it LOCALLY from the browser's own clock,
+// so the display keeps ticking through a phone sleep / network blip. Each incoming
+// broadcast just re-syncs the anchor; it's a correction, not the heartbeat.
+let liveTimer = null;            // { base, at, running, target }
+let liveTimerInterval = null;
+let liveOvertimeFired = false;
+
+function fmtLiveTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+function liveElapsedNow() {
+  if (!liveTimer) return 0;
+  if (!liveTimer.running) return liveTimer.base;
+  return liveTimer.base + (Date.now() - liveTimer.at) / 1000;
+}
+
+function applyLiveTimer() {
+  if (!liveTimer) return;
+  const el = root.querySelector('.timer-num');
+  if (!el) return; // current view has no primary timer (e.g. 'done'/meetings)
+  const secs = Math.max(0, Math.floor(liveElapsedNow()));
+  el.textContent = fmtLiveTime(secs);
+  const over = liveTimer.target > 0 && secs >= liveTimer.target;
+  el.style.color = over ? '#D7263D' : 'white';
+  // Own the overtime beep locally so the room still hears it even if the phone
+  // was asleep at the moment the mark was crossed. Edge-detected, re-arms when
+  // elapsed drops back under target (new speaker / reset).
+  if (over && !liveOvertimeFired) { liveOvertimeFired = true; try { playBeepTone(); } catch (err) {} }
+  if (!over) liveOvertimeFired = false;
+}
+
+// (Re)anchor the local ticker from a freshly-received payload. Pass null to stop.
+function startLiveTimer(p) {
+  if (liveTimerInterval) { clearInterval(liveTimerInterval); liveTimerInterval = null; }
+  if (!p || p.elapsedSec == null) { liveTimer = null; return; }
+  liveTimer = { base: Number(p.elapsedSec), at: Date.now(), running: !!p.running, target: Number(p.targetSec) || 0 };
+  applyLiveTimer();
+  if (liveTimer.running) liveTimerInterval = setInterval(applyLiveTimer, 250);
+}
 
 function renderIdle() {
   currentView = 'idle';
@@ -831,6 +886,7 @@ function renderTimer(p) {
         </div>
       </div>
     </div>`;
+  startLiveTimer(p); // keep ticking locally if the phone stops broadcasting
 }
 
 function renderRound(p) {
@@ -840,7 +896,10 @@ function renderRound(p) {
   // Beep through the display (room) speakers when a timer hits its mark — the phone
   // beeps in the moderator's hand, but the room hears the display. Edge-detect the
   // overtime flag (arrives every second) so it fires once and re-arms per speaker.
-  if (p.overtime && !prevRoundOvertime) { try { playBeepTone(); } catch (e) {} }
+  // When the payload carries numeric timer fields the local ticker (applyLiveTimer)
+  // owns the beep instead — so it still fires if the phone was asleep at the mark —
+  // hence skip the broadcast-driven beep in that case to avoid a double beep.
+  if (p.elapsedSec == null && p.overtime && !prevRoundOvertime) { try { playBeepTone(); } catch (e) {} }
   prevRoundOvertime = !!p.overtime;
 
   // Manage background audio from round state (handles reconnects)
@@ -922,6 +981,7 @@ function renderRound(p) {
     </div>`;
 
   if (phase === 'round') fitUpcomingQueue();
+  startLiveTimer(p); // keep ticking locally if the phone stops broadcasting
 }
 
 // Random-order round: keep everyone visible through 8 people (7 upcoming + the
@@ -1036,6 +1096,9 @@ function render(payload) {
   // on it surviving, and uses a DOM check to detect switch-away. Clearing it would
   // make the guard never fire (the render() null-out runs before renderMusic).
   if (meetingPollInterval && payload.type !== 'timer') { clearInterval(meetingPollInterval); meetingPollInterval = null; }
+  // Stop any prior local ticker; renderTimer/renderRound re-arm it from the new
+  // payload once their '.timer-num' element exists in the DOM.
+  startLiveTimer(null);
   switch (payload.type) {
     case 'preso':  return renderPreso(payload);
     case 'norms':  return renderNorms(payload);
